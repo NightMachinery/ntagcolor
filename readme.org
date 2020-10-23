@@ -1,0 +1,36 @@
+#+TITLE: ntagcolor
+
+* Installation
+#+BEGIN_SRC
+go get -u -v github.com/NightMachinary/ntagcolor
+#+END_SRC
+
+* Usage
+
+[[file:readme.org_imgs/20201023_194243_P1tLlL.png]]
+
+#+begin_src bsh.dash :results verbatim :exports none :wrap example
+echo rainbow\ ..test..red..orange..yellow..green..aqua..teal..disruptor..blue..purple..gray..black..txt | ntagcolor
+#+end_src
+
+#+RESULTS:
+#+begin_example
+rainbow .[1m[38;2;255;120;0m[48;2;255;255;255m.test.[00m[1m[38;2;255;255;255m[48;2;255;0;0m.red.[00m[1m[38;2;255;255;255m[48;2;255;120;0m.orange.[00m[1m[38;2;0;0;0m[48;2;255;255;0m.yellow.[00m[1m[38;2;0;0;0m[48;2;0;255;0m.green.[00m[1m[38;2;0;0;0m[48;2;0;255;255m.aqua.[00m[1m[38;2;255;255;255m[48;2;0;128;128m.teal.[00m[1m[38;2;255;120;0m[48;2;255;255;255m.disruptor.[00m[1m[38;2;255;255;255m[48;2;0;0;255m.blue.[00m[1m[38;2;255;255;255m[48;2;100;10;255m.purple.[00m[1m[38;2;255;255;255m[48;2;100;100;100m.gray.[00m[1m[38;2;255;255;255m[48;2;0;0;0m.black.[00m.txt
+#+end_example
+
+* Tests
+#+begin_src bsh.dash :results verbatim :exports both :wrap example
+arrN test t6. t6..wes t6.. t6..1 t6..1. t7..as.we rainbow\ ..test..red..orange..yellow..green..aqua..teal..disruptor..blue..purple..gray..black..txt | ntagcolor
+#+end_src
+
+#+RESULTS:
+#+begin_example
+test
+t6.
+t6..wes
+t6..
+t6..1
+t6..1.
+t7..as.we
+rainbow .[1m[38;2;255;120;0m[48;2;255;255;255m.test.[00m[1m[38;2;255;255;255m[48;2;255;0;0m.red.[00m[1m[38;2;255;255;255m[48;2;255;120;0m.orange.[00m[1m[38;2;0;0;0m[48;2;255;255;0m.yellow.[00m[1m[38;2;0;0;0m[48;2;0;255;0m.green.[00m[1m[38;2;0;0;0m[48;2;0;255;255m.aqua.[00m[1m[38;2;255;255;255m[48;2;0;128;128m.teal.[00m[1m[38;2;255;120;0m[48;2;255;255;255m.disruptor.[00m[1m[38;2;255;255;255m[48;2;0;0;255m.blue.[00m[1m[38;2;255;255;255m[48;2;100;10;255m.purple.[00m[1m[38;2;255;255;255m[48;2;100;100;100m.gray.[00m[1m[38;2;255;255;255m[48;2;0;0;0m.black.[00m.txt
+#+end_example

@@ -1,5 +1,6 @@
 #+TITLE: ntagcolor
 
+=ntagcolor= colorizes its input (=stdin=) according to my [[https://github.com/NightMachinary/.shells/blob/master/scripts/zsh/auto-load/others/tags.zsh][filename-based tagging system]], which is simply adding =..some tag..= to the end of the filename.
 * Installation
 #+BEGIN_SRC
 go get -u -v github.com/NightMachinary/ntagcolor
@@ -9,13 +10,48 @@ go get -u -v github.com/NightMachinary/ntagcolor
 
 [[file:readme.org_imgs/20201023_194243_P1tLlL.png]]
 
-#+begin_src bsh.dash :results verbatim :exports none :wrap example
+#+begin_src bsh.dash :results verbatim :exports code :wrap example
 echo rainbow\ ..test..red..orange..yellow..green..aqua..teal..disruptor..blue..purple..gray..black..txt | ntagcolor
 #+end_src
 
 #+RESULTS:
 #+begin_example
 rainbow .[1m[38;2;255;120;0m[48;2;255;255;255m.test.[00m[1m[38;2;255;255;255m[48;2;255;0;0m.red.[00m[1m[38;2;255;255;255m[48;2;255;120;0m.orange.[00m[1m[38;2;0;0;0m[48;2;255;255;0m.yellow.[00m[1m[38;2;0;0;0m[48;2;0;255;0m.green.[00m[1m[38;2;0;0;0m[48;2;0;255;255m.aqua.[00m[1m[38;2;255;255;255m[48;2;0;128;128m.teal.[00m[1m[38;2;255;120;0m[48;2;255;255;255m.disruptor.[00m[1m[38;2;255;255;255m[48;2;0;0;255m.blue.[00m[1m[38;2;255;255;255m[48;2;100;10;255m.purple.[00m[1m[38;2;255;255;255m[48;2;100;100;100m.gray.[00m[1m[38;2;255;255;255m[48;2;0;0;0m.black.[00m.txt
+#+end_example
+
+* Benchmarks
+#+begin_src bsh.dash :results verbatim :exports both :wrap example
+z ddg # sets PWD to a big directory
+hyperfine --warmup 5 "fd --color never" "fd --color never | ntagcolor" "fd --color always" "fd --color always | ntagcolor"
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Benchmark #1: fd --color never
+  Time (mean ± σ):      27.5 ms ±   5.7 ms    [User: 39.0 ms, System: 23.9 ms]
+  Range (min … max):    23.0 ms …  53.1 ms    66 runs
+
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+
+Benchmark #2: fd --color never | ntagcolor
+  Time (mean ± σ):      38.1 ms ±   5.7 ms    [User: 47.0 ms, System: 32.0 ms]
+  Range (min … max):    32.7 ms …  55.5 ms    65 runs
+
+Benchmark #3: fd --color always
+  Time (mean ± σ):      52.2 ms ±   8.4 ms    [User: 50.3 ms, System: 37.1 ms]
+  Range (min … max):    45.7 ms …  75.5 ms    51 runs
+
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+
+Benchmark #4: fd --color always | ntagcolor
+  Time (mean ± σ):      67.3 ms ±   8.6 ms    [User: 63.6 ms, System: 53.2 ms]
+  Range (min … max):    57.6 ms …  89.9 ms    35 runs
+
+Summary
+  'fd --color never' ran
+    1.39 ± 0.35 times faster than 'fd --color never | ntagcolor'
+    1.90 ± 0.50 times faster than 'fd --color always'
+    2.45 ± 0.59 times faster than 'fd --color always | ntagcolor'
 #+end_example
 
 * Tests

@@ -56,6 +56,8 @@ func main() {
 					PrintColored(Sprintf(".%s.", t),0, 0, 0, 0, 255, 255)
 				} else if t == "teal" {
 					PrintColored(Sprintf(".%s.", t),255, 255, 255, 0, 128, 128)
+				} else if t == "emerald" {
+					PrintColored(Sprintf(".%s.", t),0, 0, 0, 80, 200, 120)
 				} else if ! strings.ContainsRune(t, '/') {
 					PrintColored(Sprintf(".%s.", t),255, 120, 0, 255, 255, 255)
 				} else {

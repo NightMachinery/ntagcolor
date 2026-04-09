@@ -11,12 +11,12 @@ go get -u -v github.com/NightMachinary/ntagcolor
 [[file:readme.org_imgs/20201023_194243_P1tLlL.png]]
 
 #+begin_src bsh.dash :results verbatim :exports code :wrap example
-echo rainbow\ ..test..red..orange..yellow..green..emerald..aqua..teal..disruptor..blue..purple..gray..black..txt | ntagcolor
+echo rainbow\ ..test..red..orange..yellow..green..emerald..aqua..teal..disruptor..blue..purple..gray..black..white..txt | ntagcolor
 #+end_src
 
 #+RESULTS:
 #+begin_example
-rainbow ..test..red..orange..yellow..green..emerald..aqua..teal..disruptor..blue..purple..gray..black..txt
+rainbow ..test..red..orange..yellow..green..emerald..aqua..teal..disruptor..blue..purple..gray..black..white..txt
 #+end_example
 
 * Benchmarks
@@ -56,7 +56,7 @@ Summary
 
 * Tests
 #+begin_src bsh.dash :results verbatim :exports both :wrap example
-arrN test t6. t6..wes t6.. t6..1 t6..1. t7..as.we rainbow\ ..test..red..orange..yellow..green..aqua..teal..disruptor..blue..purple..gray..black..txt | ntagcolor
+arrN test t6. t6..wes t6.. t6..1 t6..1. t7..as.we rainbow\ ..test..red..orange..yellow..green..aqua..teal..disruptor..blue..purple..gray..black..white..txt | ntagcolor
 #+end_src
 
 #+RESULTS:
@@ -68,5 +68,5 @@ t6..
 t6..1
 t6..1.
 t7..as.we
-rainbow ..test..red..orange..yellow..green..aqua..teal..disruptor..blue..purple..gray..black..txt
+rainbow ..test..red..orange..yellow..green..aqua..teal..disruptor..blue..purple..gray..black..white..txt
 #+end_example

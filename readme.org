@@ -12,6 +12,19 @@ checked-in generated table with precomputed RGB values and ANSI prefixes. See
 go get -u -v github.com/NightMachinary/ntagcolor
 #+END_SRC
 
+* Build
+
+Plain =go build= works because the generated runtime color table is checked in.
+For local development, use the Makefile so generated styles are refreshed before
+building or testing:
+
+#+begin_src bsh.dash :exports code
+make build
+make check
+#+end_src
+
+See [[file:docs/build.md][docs/build.md]] for build targets and generated-file notes.
+
 * Usage
 
 [[file:readme.org_imgs/20201023_194243_P1tLlL.png]]

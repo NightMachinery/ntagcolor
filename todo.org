@@ -1,0 +1,27 @@
+#+TITLE: ntagcolor/todo
+
+* DONE _
+#+BEGIN_SRC markdown
+Put all supported colored tags into a data-declarative structure. Massively expand  supported colors. You can run `emc-eval '(counsel-colors--web-alist)'` to get a  massive list of colors. Support multiple ways to specify color in the data declarative structure (rgb, hex, etc.). Any questions or suggestions?
+
+```elisp
+(defun counsel-colors--web-alist ()
+  "Return list of CSS colors for `counsel-colors-web'."
+  (require 'shr-color)
+  (let* ((alist (copy-alist shr-color-html-colors-alist))
+         (mp  (assoc "MediumPurple"  alist))
+         (pvr (assoc "PaleVioletRed" alist))
+         (rp  (assoc "RebeccaPurple" alist)))
+    ;; Backport GNU Emacs bug#30377
+    (when mp (setcdr mp "#9370db"))
+    (when pvr (setcdr pvr "#db7093"))
+    (unless rp (push (cons "rebeccapurple" "#663399") alist))
+    (sort (mapcar (lambda (cell)
+                    (propertize (downcase (car cell))
+                                'hex (downcase (cdr cell))))
+                  alist)
+          #'string-lessp)))
+```
+
+#+END_SRC
+

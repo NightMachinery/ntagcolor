@@ -9,11 +9,18 @@ checked-in generated table with precomputed RGB values and ANSI prefixes. See
 [[file:docs/colors-from-emacs.md][docs/colors-from-emacs.md]] for the Emacs source and regeneration notes.
 
 * Installation
+For normal use, install directly with Go:
+
 #+BEGIN_SRC
 go install github.com/NightMachinary/ntagcolor@latest
 #+END_SRC
 
-From a local checkout, use:
+This does not require =make install=. The generated runtime style table is
+committed to the repository, so the Go tool can build the command directly from
+the module.
+
+Use =make install= only from a local checkout, especially when developing or
+after changing generated inputs:
 
 #+BEGIN_SRC
 make install

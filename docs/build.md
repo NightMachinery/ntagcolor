@@ -3,6 +3,15 @@
 `ntagcolor` is a normal Go command. Plain `go build` and `go install` work
 because the generated runtime style table is checked in.
 
+For installing the latest pushed version, use Go directly:
+
+```sh
+go install github.com/NightMachinary/ntagcolor@latest
+```
+
+This does not run or require `make install`. The command works from outside the
+repository because `styles_gen.go` is already committed.
+
 The recommended local build path is:
 
 ```sh
@@ -28,8 +37,9 @@ Use `make check` before committing changes to the color table or renderer. It
 catches stale generated output while still allowing normal `go build` consumers
 to install without running a custom build wrapper.
 
-`make install` installs through Go's normal install path. Set `GOBIN` or
-`GOPATH` the same way you would for `go install`:
+`make install` is for a local checkout. It refreshes generated styles first,
+then installs through Go's normal install path. Set `GOBIN` or `GOPATH` the
+same way you would for `go install`:
 
 ```sh
 GOBIN="$HOME/bin" make install

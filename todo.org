@@ -1,5 +1,7 @@
 #+TITLE: ntagcolor/todo
 
+* DONE I want you to optimize the time this binary runs. Run benchmarks etc.
+
 * DONE _
 #+BEGIN_SRC markdown
 Put all supported colored tags into a data-declarative structure. Massively expand  supported colors. You can run `emc-eval '(counsel-colors--web-alist)'` to get a  massive list of colors. Support multiple ways to specify color in the data declarative structure (rgb, hex, etc.). Any questions or suggestions?

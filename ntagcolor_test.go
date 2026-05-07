@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -107,6 +112,185 @@ func TestRenderTagFallbackAndSlashBehavior(t *testing.T) {
 	if pathTag != ".path/tag." {
 		t.Fatalf("slash tag render = %q, want %q", pathTag, ".path/tag.")
 	}
+}
+
+func TestRenderLineEdgeCases(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+		want string
+	}{
+		{name: "no tag", line: "plain.txt", want: "plain.txt"},
+		{name: "known tag", line: "file..red..txt", want: "file." + styledTag("red", resolvedTagStyles["red"]) + ".txt"},
+		{name: "unknown tag", line: "file..disruptor..txt", want: "file." + styledTag("disruptor", unknownTagStyle) + ".txt"},
+		{name: "slash tag", line: "file..path/tag..txt", want: "file..path/tag..txt"},
+		{name: "multiple tags", line: "rainbow..red..aliceblue..txt", want: "rainbow." + styledTag("red", resolvedTagStyles["red"]) + styledTag("aliceblue", resolvedTagStyles["aliceblue"]) + ".txt"},
+		{name: "leading delimiter", line: "..red..txt", want: "." + styledTag("red", resolvedTagStyles["red"]) + ".txt"},
+		{name: "trailing delimiter", line: "file..red..", want: "file." + styledTag("red", resolvedTagStyles["red"]) + "."},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := renderLineString(tt.line); got != tt.want {
+				t.Fatalf("renderLineTo(%q) = %q, want %q", tt.line, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRunOutputAndFlags(t *testing.T) {
+	input := "file..AliceBlue..txt\n\nlast..path/tag..end"
+	want := "file." + styledTag("AliceBlue", resolvedTagStyles["aliceblue"]) + ".txt\nlast..path/tag..end\n"
+
+	for _, args := range [][]string{nil, {"--line-buffered"}, {"--line-buffered=true"}} {
+		var out bytes.Buffer
+		if err := run(args, strings.NewReader(input), &out); err != nil {
+			t.Fatalf("run(%v) returned error: %v", args, err)
+		}
+		if got := out.String(); got != want {
+			t.Fatalf("run(%v) output = %q, want %q", args, got, want)
+		}
+	}
+
+	var out bytes.Buffer
+	if err := run([]string{"unexpected"}, strings.NewReader(input), &out); err == nil {
+		t.Fatal("run with unexpected positional argument returned nil error")
+	}
+}
+
+func TestLineBufferedFlushesEachLine(t *testing.T) {
+	var writes recordingWriter
+	out := bufio.NewWriterSize(&writes, defaultOutputBufferSize)
+	if err := renderInput(strings.NewReader("a..red..b\nc..blue..d\n"), out, true); err != nil {
+		t.Fatalf("renderInput line-buffered returned error: %v", err)
+	}
+	if len(writes.writes) != 2 {
+		t.Fatalf("line-buffered writes = %d, want 2", len(writes.writes))
+	}
+
+	writes = recordingWriter{}
+	out = bufio.NewWriterSize(&writes, defaultOutputBufferSize)
+	if err := renderInput(strings.NewReader("a..red..b\nc..blue..d\n"), out, false); err != nil {
+		t.Fatalf("renderInput block-buffered returned error: %v", err)
+	}
+	if len(writes.writes) != 0 {
+		t.Fatalf("block-buffered writes before final flush = %d, want 0", len(writes.writes))
+	}
+	if err := out.Flush(); err != nil {
+		t.Fatalf("final flush: %v", err)
+	}
+	if len(writes.writes) != 1 {
+		t.Fatalf("block-buffered writes after final flush = %d, want 1", len(writes.writes))
+	}
+}
+
+func TestGeneratedStylesAreCurrent(t *testing.T) {
+	tmp := t.TempDir()
+	for _, name := range []string{"generate_styles.go", "styles_decl.go"} {
+		content, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		if err := os.WriteFile(filepath.Join(tmp, name), content, 0644); err != nil {
+			t.Fatalf("copy %s: %v", name, err)
+		}
+	}
+
+	cmd := exec.Command("go", "run", "-tags", "generate", "generate_styles.go", "styles_decl.go")
+	cmd.Dir = tmp
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("run generator: %v\n%s", err, output)
+	}
+
+	got, err := os.ReadFile(filepath.Join(tmp, "styles_gen.go"))
+	if err != nil {
+		t.Fatalf("read generated temp styles: %v", err)
+	}
+	want, err := os.ReadFile("styles_gen.go")
+	if err != nil {
+		t.Fatalf("read checked-in styles_gen.go: %v", err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatal("styles_gen.go is stale; run go generate ./...")
+	}
+}
+
+func BenchmarkResolveStyle(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		resolveStyle("rebeccapurple")
+	}
+}
+
+func BenchmarkRenderLineTagged(b *testing.B) {
+	out := discardStringWriter{}
+	line := "dir/subdir/file..red..orange..yellowgreen..path/tag..txt"
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		renderLineTo(out, line)
+	}
+}
+
+func BenchmarkRenderInputLargeBlockBuffered(b *testing.B) {
+	benchmarkRenderInputLarge(b, false)
+}
+
+func BenchmarkRenderInputLargeLineBuffered(b *testing.B) {
+	benchmarkRenderInputLarge(b, true)
+}
+
+func benchmarkRenderInputLarge(b *testing.B, lineBuffered bool) {
+	input := benchmarkInput(20000)
+	b.SetBytes(int64(len(input)))
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		out := bufio.NewWriterSize(io.Discard, defaultOutputBufferSize)
+		if err := renderInput(strings.NewReader(input), out, lineBuffered); err != nil {
+			b.Fatal(err)
+		}
+		if err := out.Flush(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func benchmarkInput(lines int) string {
+	var sb strings.Builder
+	tags := []string{"red", "orange", "yellow", "green", "emerald", "aqua", "teal", "disruptor", "blue", "purple", "gray", "black", "white", "aliceblue", "rebeccapurple", "yellowgreen", "path/tag"}
+	for i := 0; i < lines; i++ {
+		sb.WriteString("dir/subdir/file_")
+		sb.WriteString(strconv.Itoa(i))
+		sb.WriteString("..")
+		sb.WriteString(tags[i%len(tags)])
+		sb.WriteString("..")
+		sb.WriteString(tags[(i+5)%len(tags)])
+		sb.WriteString("..txt\n")
+	}
+	return sb.String()
+}
+
+type recordingWriter struct {
+	writes []string
+}
+
+func (w *recordingWriter) Write(p []byte) (int, error) {
+	w.writes = append(w.writes, string(p))
+	return len(p), nil
+}
+
+type discardStringWriter struct{}
+
+func (discardStringWriter) WriteString(s string) (int, error) {
+	return len(s), nil
+}
+
+func renderLineString(line string) string {
+	var out strings.Builder
+	renderLineTo(&out, line)
+	return out.String()
+}
+
+func styledTag(tag string, style resolvedTagStyle) string {
+	return style.Prefix + "." + tag + "." + resetANSI
 }
 
 func captureStdout(t *testing.T, fn func()) string {

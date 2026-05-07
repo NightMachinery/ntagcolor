@@ -1,7 +1,7 @@
 GO ?= go
 BIN ?= ntagcolor
 
-.PHONY: all generate build test bench check clean
+.PHONY: all generate build install test bench check clean
 
 all: build
 
@@ -10,6 +10,9 @@ generate:
 
 build: generate
 	$(GO) build -o $(BIN) .
+
+install: generate
+	$(GO) install .
 
 test: generate
 	$(GO) test ./...

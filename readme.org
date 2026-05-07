@@ -20,6 +20,7 @@ building or testing:
 
 #+begin_src bsh.dash :exports code
 make build
+make install
 make check
 #+end_src
 

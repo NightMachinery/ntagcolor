@@ -17,6 +17,7 @@ keeps `styles_gen.go` current when `styles_decl.go` changes.
 ```sh
 make generate  # refresh styles_gen.go
 make build     # regenerate, then build ./ntagcolor
+make install   # regenerate, then install with go install .
 make test      # regenerate, then run go test ./...
 make bench     # run Go benchmarks
 make check     # regenerate, test, and fail if styles_gen.go changed
@@ -26,6 +27,13 @@ make clean     # remove ./ntagcolor
 Use `make check` before committing changes to the color table or renderer. It
 catches stale generated output while still allowing normal `go build` consumers
 to install without running a custom build wrapper.
+
+`make install` installs through Go's normal install path. Set `GOBIN` or
+`GOPATH` the same way you would for `go install`:
+
+```sh
+GOBIN="$HOME/bin" make install
+```
 
 ## Generated Styles
 

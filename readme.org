@@ -7,20 +7,27 @@ preserved, and CSS/web color names from Emacs are also supported, e.g.
 =aliceblue=, =rebeccapurple=, and =yellowgreen=. Runtime color lookup uses a
 checked-in generated table with precomputed RGB values and ANSI prefixes. See
 [[file:docs/colors-from-emacs.md][docs/colors-from-emacs.md]] for the Emacs source and regeneration notes.
+
 * Installation
 #+BEGIN_SRC
-go get -u -v github.com/NightMachinary/ntagcolor
+go install github.com/NightMachinary/ntagcolor@latest
+#+END_SRC
+
+From a local checkout, use:
+
+#+BEGIN_SRC
+make install
 #+END_SRC
 
 * Build
 
 Plain =go build= works because the generated runtime color table is checked in.
 For local development, use the Makefile so generated styles are refreshed before
-building or testing:
+installing, building, or testing:
 
 #+begin_src bsh.dash :exports code
-make build
 make install
+make build
 make check
 #+end_src
 

@@ -1,7 +1,9 @@
 # Colors from Emacs
 
 `ntagcolor` supports CSS/web color tags by copying color names and hex values
-from Emacs into the Go declarative color table.
+from Emacs into the Go declarative color table. Runtime lookup uses
+`styles_gen.go`, a checked-in generated file with precomputed foreground colors,
+background colors, and ANSI prefixes.
 
 The source expression is:
 
@@ -25,8 +27,19 @@ To refresh the table:
 emc-eval '(mapcar (lambda (c) (cons (substring-no-properties c) (get-text-property 0 (quote hex) c))) (counsel-colors--web-alist))'
 ```
 
-Copy the resulting values into `tagStyles` as `Hex("#rrggbb")` entries. The Go
-table also supports direct RGB declarations with `RGB(r, g, b)`.
+Copy the resulting values into `tagStyles` in `styles_decl.go` as
+`Hex("#rrggbb")` entries. The declarative table also supports direct RGB
+declarations with `RGB(r, g, b)`.
+
+After editing `tagStyles`, regenerate the resolved runtime table:
+
+```sh
+go generate ./...
+```
+
+`styles_gen.go` is committed so normal `go build` and `go install` do not need
+Emacs or a custom build wrapper. Tests compare regenerated output against the
+checked-in file and fail if it is stale.
 
 Foreground handling:
 

@@ -4,7 +4,8 @@
 
 Color tags are declared in the Go color table. Existing historical colors are
 preserved, and CSS/web color names from Emacs are also supported, e.g.
-=aliceblue=, =rebeccapurple=, and =yellowgreen=. See
+=aliceblue=, =rebeccapurple=, and =yellowgreen=. Runtime color lookup uses a
+checked-in generated table with precomputed RGB values and ANSI prefixes. See
 [[file:docs/colors-from-emacs.md][docs/colors-from-emacs.md]] for the Emacs source and regeneration notes.
 * Installation
 #+BEGIN_SRC
@@ -24,39 +25,53 @@ echo rainbow\ ..test..red..orange..yellow..green..emerald..aqua..teal..disruptor
 rainbow ..test..red..orange..yellow..green..emerald..aqua..teal..disruptor..blue..purple..gray..black..white..txt
 #+end_example
 
+By default, =ntagcolor= block-buffers stdout for throughput and flushes at EOF.
+Use =--line-buffered= when another pipeline stage needs each rendered line as
+soon as it is read:
+
+#+begin_src bsh.dash :exports code
+fd --color never | ntagcolor --line-buffered
+#+end_src
+
 * Benchmarks
 #+begin_src bsh.dash :results verbatim :exports both :wrap example
-z ddg # sets PWD to a big directory
-hyperfine --warmup 5 "fd --color never" "fd --color never | ntagcolor" "fd --color always" "fd --color always | ntagcolor"
+go test -bench=. -benchmem -run '^$'
 #+end_src
 
 #+RESULTS:
 #+begin_example
-Benchmark #1: fd --color never
-  Time (mean ± σ):      27.5 ms ±   5.7 ms    [User: 39.0 ms, System: 23.9 ms]
-  Range (min … max):    23.0 ms …  53.1 ms    66 runs
+goos: darwin
+goarch: arm64
+pkg: github.com/NightMachinary/ntagcolor
+BenchmarkResolveStyle-8                     59376424        18.70 ns/op       0 B/op       0 allocs/op
+BenchmarkRenderLineTagged-8                  7344075        168.5 ns/op       0 B/op       0 allocs/op
+BenchmarkRenderInputLargeBlockBuffered-8         327      3877809 ns/op  223.15 MB/s  1078401 B/op   20065 allocs/op
+BenchmarkRenderInputLargeLineBuffered-8          326      3725156 ns/op  232.30 MB/s  1078450 B/op   20065 allocs/op
+#+end_example
 
-  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+End-to-end comparison on an 8.85 MB generated tagged file:
 
-Benchmark #2: fd --color never | ntagcolor
-  Time (mean ± σ):      38.1 ms ±   5.7 ms    [User: 47.0 ms, System: 32.0 ms]
-  Range (min … max):    32.7 ms …  55.5 ms    65 runs
+#+begin_src bsh.dash :results verbatim :exports both :wrap example
+hyperfine --warmup 3 --runs 10 \
+  '/tmp/ntagcolor-old < /tmp/ntagcolor-large.txt > /dev/null' \
+  '/tmp/ntagcolor-new < /tmp/ntagcolor-large.txt > /dev/null' \
+  '/tmp/ntagcolor-new --line-buffered < /tmp/ntagcolor-large.txt > /dev/null'
+#+end_src
 
-Benchmark #3: fd --color always
-  Time (mean ± σ):      52.2 ms ±   8.4 ms    [User: 50.3 ms, System: 37.1 ms]
-  Range (min … max):    45.7 ms …  75.5 ms    51 runs
+#+RESULTS:
+#+begin_example
+Benchmark 1: /tmp/ntagcolor-old < /tmp/ntagcolor-large.txt > /dev/null
+  Time (mean ± σ):     760.9 ms ± 102.7 ms
 
-  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+Benchmark 2: /tmp/ntagcolor-new < /tmp/ntagcolor-large.txt > /dev/null
+  Time (mean ± σ):      47.8 ms ±   1.5 ms
 
-Benchmark #4: fd --color always | ntagcolor
-  Time (mean ± σ):      67.3 ms ±   8.6 ms    [User: 63.6 ms, System: 53.2 ms]
-  Range (min … max):    57.6 ms …  89.9 ms    35 runs
+Benchmark 3: /tmp/ntagcolor-new --line-buffered < /tmp/ntagcolor-large.txt > /dev/null
+  Time (mean ± σ):     147.1 ms ±  19.8 ms
 
 Summary
-  'fd --color never' ran
-    1.39 ± 0.35 times faster than 'fd --color never | ntagcolor'
-    1.90 ± 0.50 times faster than 'fd --color always'
-    2.45 ± 0.59 times faster than 'fd --color always | ntagcolor'
+  '/tmp/ntagcolor-new < /tmp/ntagcolor-large.txt > /dev/null' ran
+   15.92 ± 2.20 times faster than '/tmp/ntagcolor-old < /tmp/ntagcolor-large.txt > /dev/null'
 #+end_example
 
 * Tests

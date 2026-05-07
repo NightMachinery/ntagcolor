@@ -1,6 +1,11 @@
 #+TITLE: ntagcolor
 
 =ntagcolor= colorizes its input (=stdin=) according to my [[https://github.com/NightMachinary/.shells/blob/master/scripts/zsh/auto-load/others/tags.zsh][filename-based tagging system]], which is simply adding =..some tag..= to the end of the filename.
+
+Color tags are declared in the Go color table. Existing historical colors are
+preserved, and CSS/web color names from Emacs are also supported, e.g.
+=aliceblue=, =rebeccapurple=, and =yellowgreen=. See
+[[file:docs/colors-from-emacs.md][docs/colors-from-emacs.md]] for the Emacs source and regeneration notes.
 * Installation
 #+BEGIN_SRC
 go get -u -v github.com/NightMachinary/ntagcolor

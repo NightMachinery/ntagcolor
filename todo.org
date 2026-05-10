@@ -1,7 +1,5 @@
 #+TITLE: ntagcolor/todo
 
-* [[NIGHTDIR:zshlang/auto-load/others/terminal emulators/iterm.zsh::: It's difficult to apply ntag-color here, because ntagcolor resets colors instead of resuming.][It's difficult to apply ntag-color here, because ntagcolor resets colors instead of resuming]]
-
 * DONE I want you to optimize the time this binary runs. Run benchmarks etc.
 
 * DONE _

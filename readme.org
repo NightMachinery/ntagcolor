@@ -61,6 +61,24 @@ soon as it is read:
 fd --color never | ntagcolor --line-buffered
 #+end_src
 
+=ntagcolor= preserves active ANSI SGR styles by default. This matters when the
+input is already colored, because tag rendering temporarily applies its own
+foreground and background colors:
+
+#+begin_src bsh.dash :exports code
+fd --color always | ntagcolor
+#+end_src
+
+Use =--no-preserve-ansi=, or equivalently =--preserve-ansi=false=, to get the
+older behavior where each rendered tag ends with a full ANSI reset:
+
+#+begin_src bsh.dash :exports code
+fd --color always | ntagcolor --no-preserve-ansi
+#+end_src
+
+See [[file:docs/ansi-preservation.md][docs/ansi-preservation.md]] for the supported
+ANSI style tracking behavior.
+
 * Benchmarks
 #+begin_src bsh.dash :results verbatim :exports both :wrap example
 go test -bench=. -benchmem -run '^$'

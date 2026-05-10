@@ -138,11 +138,68 @@ func TestRenderLineEdgeCases(t *testing.T) {
 	}
 }
 
+func TestRenderLinePreservingANSIRestoresActiveSGR(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+		want string
+	}{
+		{
+			name: "foreground",
+			line: "\x1b[90mfile..red..txt",
+			want: "\x1b[90mfile." + styledTagRestoring("red", resolvedTagStyles["red"], "\x1b[90m") + ".txt",
+		},
+		{
+			name: "attributes and background",
+			line: "\x1b[1;4;44mfile..green..txt",
+			want: "\x1b[1;4;44mfile." + styledTagRestoring("green", resolvedTagStyles["green"], "\x1b[1;4;44m") + ".txt",
+		},
+		{
+			name: "partial reset",
+			line: "\x1b[1;90mfile\x1b[22m..blue..txt",
+			want: "\x1b[1;90mfile\x1b[22m." + styledTagRestoring("blue", resolvedTagStyles["blue"], "\x1b[90m") + ".txt",
+		},
+		{
+			name: "full reset",
+			line: "\x1b[90mfile\x1b[0m..yellow..txt",
+			want: "\x1b[90mfile\x1b[0m." + styledTag("yellow", resolvedTagStyles["yellow"]) + ".txt",
+		},
+		{
+			name: "256 color",
+			line: "\x1b[38;5;244mfile..red..txt",
+			want: "\x1b[38;5;244mfile." + styledTagRestoring("red", resolvedTagStyles["red"], "\x1b[38;5;244m") + ".txt",
+		},
+		{
+			name: "truecolor",
+			line: "\x1b[38;2;1;2;3;48;2;4;5;6mfile..red..txt",
+			want: "\x1b[38;2;1;2;3;48;2;4;5;6mfile." + styledTagRestoring("red", resolvedTagStyles["red"], "\x1b[38;2;1;2;3;48;2;4;5;6m") + ".txt",
+		},
+		{
+			name: "slash tag tracks ansi",
+			line: "file..\x1b[91mpath/tag..red..txt",
+			want: "file..\x1b[91mpath/tag." + styledTagRestoring("red", resolvedTagStyles["red"], "\x1b[91m") + ".txt",
+		},
+		{
+			name: "malformed csi passes through",
+			line: "\x1b[90file..red..txt",
+			want: "\x1b[90file." + styledTag("red", resolvedTagStyles["red"]) + ".txt",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := renderLinePreserveString(tt.line); got != tt.want {
+				t.Fatalf("renderLineToPreservingANSI(%q) = %q, want %q", tt.line, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRunOutputAndFlags(t *testing.T) {
 	input := "file..AliceBlue..txt\n\nlast..path/tag..end"
 	want := "file." + styledTag("AliceBlue", resolvedTagStyles["aliceblue"]) + ".txt\nlast..path/tag..end\n"
 
-	for _, args := range [][]string{nil, {"--line-buffered"}, {"--line-buffered=true"}} {
+	for _, args := range [][]string{nil, {"--line-buffered"}, {"--line-buffered=true"}, {"--no-preserve-ansi"}, {"--preserve-ansi=false"}} {
 		var out bytes.Buffer
 		if err := run(args, strings.NewReader(input), &out); err != nil {
 			t.Fatalf("run(%v) returned error: %v", args, err)
@@ -158,10 +215,41 @@ func TestRunOutputAndFlags(t *testing.T) {
 	}
 }
 
+func TestRunPreservesANSIByDefault(t *testing.T) {
+	input := "\x1b[90mfile..red..txt\nnext..blue..go"
+	want := "\x1b[90mfile." + styledTagRestoring("red", resolvedTagStyles["red"], "\x1b[90m") + ".txt\n" +
+		"next." + styledTagRestoring("blue", resolvedTagStyles["blue"], "\x1b[90m") + ".go\n"
+
+	for _, args := range [][]string{nil, {"--preserve-ansi"}} {
+		var out bytes.Buffer
+		if err := run(args, strings.NewReader(input), &out); err != nil {
+			t.Fatalf("run(%v) returned error: %v", args, err)
+		}
+		if got := out.String(); got != want {
+			t.Fatalf("run(%v) output = %q, want %q", args, got, want)
+		}
+	}
+}
+
+func TestRunNoPreserveANSIDisablesRestoration(t *testing.T) {
+	input := "\x1b[90mfile..red..txt"
+	want := "\x1b[90mfile." + styledTag("red", resolvedTagStyles["red"]) + ".txt\n"
+
+	for _, args := range [][]string{{"--no-preserve-ansi"}, {"--preserve-ansi=false"}} {
+		var out bytes.Buffer
+		if err := run(args, strings.NewReader(input), &out); err != nil {
+			t.Fatalf("run(%v) returned error: %v", args, err)
+		}
+		if got := out.String(); got != want {
+			t.Fatalf("run(%v) output = %q, want %q", args, got, want)
+		}
+	}
+}
+
 func TestLineBufferedFlushesEachLine(t *testing.T) {
 	var writes recordingWriter
 	out := bufio.NewWriterSize(&writes, defaultOutputBufferSize)
-	if err := renderInput(strings.NewReader("a..red..b\nc..blue..d\n"), out, true); err != nil {
+	if err := renderInput(strings.NewReader("a..red..b\nc..blue..d\n"), out, true, true); err != nil {
 		t.Fatalf("renderInput line-buffered returned error: %v", err)
 	}
 	if len(writes.writes) != 2 {
@@ -170,7 +258,7 @@ func TestLineBufferedFlushesEachLine(t *testing.T) {
 
 	writes = recordingWriter{}
 	out = bufio.NewWriterSize(&writes, defaultOutputBufferSize)
-	if err := renderInput(strings.NewReader("a..red..b\nc..blue..d\n"), out, false); err != nil {
+	if err := renderInput(strings.NewReader("a..red..b\nc..blue..d\n"), out, false, true); err != nil {
 		t.Fatalf("renderInput block-buffered returned error: %v", err)
 	}
 	if len(writes.writes) != 0 {
@@ -244,7 +332,7 @@ func benchmarkRenderInputLarge(b *testing.B, lineBuffered bool) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		out := bufio.NewWriterSize(io.Discard, defaultOutputBufferSize)
-		if err := renderInput(strings.NewReader(input), out, lineBuffered); err != nil {
+		if err := renderInput(strings.NewReader(input), out, lineBuffered, true); err != nil {
 			b.Fatal(err)
 		}
 		if err := out.Flush(); err != nil {
@@ -289,8 +377,19 @@ func renderLineString(line string) string {
 	return out.String()
 }
 
+func renderLinePreserveString(line string) string {
+	var out strings.Builder
+	var state ansiState
+	renderLineToPreservingANSI(&out, line, &state)
+	return out.String()
+}
+
 func styledTag(tag string, style resolvedTagStyle) string {
 	return style.Prefix + "." + tag + "." + resetANSI
+}
+
+func styledTagRestoring(tag string, style resolvedTagStyle, restore string) string {
+	return style.Prefix + "." + tag + "." + resetANSI + restore
 }
 
 func captureStdout(t *testing.T, fn func()) string {
